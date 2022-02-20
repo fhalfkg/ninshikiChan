@@ -1,20 +1,16 @@
+import json
 import speech_recognition as sr
 from googletrans import Translator
+import codecs
+from dotenv import load_dotenv
+import os
+import requests
 
-#######################################
-# 初期設定 -----------------------------
+load_dotenv(verbose=True)
+
 lang_in = 'ja'
-lang_dest = 'en'
+lang_dest = 'ko'
 
-
-
-
-
-#######################################
-# 以下　プログラム
-#######################################
-
-# 最初の初期化 --------------------------
 translator = Translator()
 r = sr.Recognizer()
 mic = sr.Microphone()
@@ -42,18 +38,26 @@ while True:
     # 翻訳 --------------------------
     translatedText = ''
     try:
-        translatedText = translator.translate(recog_text, src=lang_in, dest=lang_dest).text
+        headers = {
+            'Content-Type': 'application/json',
+            'X-NCP-APIGW-API-KEY-ID': os.getenv('NCAPIID'),
+            'X-NCP-APIGW-API-KEY': os.getenv('NCAPIKEY')
+        }
+        data = {
+            'source': lang_in,
+            'target': lang_dest,
+            'text': recog_text
+        }
+        translatedText = requests.post(url=os.getenv('NCAPIURL'), data=json.dumps(data), headers=headers).json()['message']['result']['translatedText']
     except:
         pass
 
     print(translatedText)
 
     if recog_text:
-        # テキストファイルの作成 ------------------
-        out_file = open('out.txt', 'w')
+        out_file = codecs.open('out.txt', 'w', 'utf-8')
 
         print(recog_text, file=out_file)
         print(translatedText, file=out_file)
 
-        # ファイルを閉じる ----------------
         out_file.close()
